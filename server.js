@@ -56,6 +56,8 @@ ${message}
 
 // 5️⃣ listen LAST
 const PORT = process.env.PORT || 5000;
-app.listen(5000, () => {
+
+// Pass the PORT variable and bind to '0.0.0.0'
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
