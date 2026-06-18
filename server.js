@@ -32,7 +32,7 @@ app.post("/send", async (req, res) => {
        // Force IPv4 connection to bypass Railway's network routing glitch
     const transporter = nodemailer.createTransport({
       host: "://gmail.com",
-      port: 465,
+      port: 8080,
       secure: true, // Use SSL/TLS
       connectionTimeout: 10000, // 10 seconds timeout
       auth: {
