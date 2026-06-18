@@ -29,13 +29,22 @@ app.post("/send", async (req, res) => {
     }
 
     // Set up Nodemailer to connect securely with Gmail
+       // Force IPv4 connection to bypass Railway's network routing glitch
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "://gmail.com",
+      port: 465,
+      secure: true, // Use SSL/TLS
+      connectionTimeout: 10000, // 10 seconds timeout
       auth: {
         user: process.env.EMAIL_USER, 
         pass: process.env.EMAIL_PASS, 
       },
+      tls: {
+        // This forces Node to look up the IPv4 address instead of IPv6
+        family: 4 
+      }
     });
+
 
     // Structure the notification email
     const mailOptions = {
