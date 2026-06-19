@@ -66,12 +66,17 @@ ${message}
     res.json({ success: true, message: "Email sent!" });
 
   } catch (error) {
-    console.log("❌ EMAIL ERROR:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  console.error("🔥 FULL ERROR OBJECT:", error);
+
+  return res.status(500).json({
+    success: false,
+    message: error.message,
+    code: error.code,
+    command: error.command,
+    response: error.response,
+    stack: error.stack,
+  });
+}
 });
 
 // 5️⃣ Production Server Setup
