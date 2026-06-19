@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
-import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import { Resend } from "resend";
 
 dotenv.config();
 
@@ -11,27 +11,9 @@ app.use(cors());
 app.use(express.json());
 
 /* =========================
-   SMTP TRANSPORT (FIXED)
+   RESEND SETUP
 ========================= */
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  pool: true,
-  maxConnections: 1,
-  rateLimit: 1,
-});
-
-/* Optional: check SMTP at startup */
-transporter.verify((error, success) => {
-  if (error) {
-    console.log("❌ SMTP ERROR:", error);
-  } else {
-    console.log("✅ SMTP READY");
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /* =========================
    TEST ROUTE
@@ -49,6 +31,7 @@ app.post("/send", async (req, res) => {
 
     const { name, email, subject, message } = req.body;
 
+    // validation
     if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
@@ -56,11 +39,10 @@ app.post("/send", async (req, res) => {
       });
     }
 
-    const mailOptions = {
-      from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
+    const response = await resend.emails.send({
+      from: "Portfolio Contact <onboarding@resend.dev>",
       to: process.env.EMAIL_USER,
       subject: subject || `New message from ${name}`,
-      replyTo: email,
       text: `
 📬 New Portfolio Form Submission
 -----------------------------------
@@ -71,11 +53,9 @@ Message:
 ${message}
 -----------------------------------
       `,
-    };
+    });
 
-    const info = await transporter.sendMail(mailOptions);
-
-    console.log("✅ EMAIL SENT:", info.response);
+    console.log("✅ EMAIL SENT:", response);
 
     return res.json({
       success: true,
@@ -83,7 +63,7 @@ ${message}
     });
 
   } catch (error) {
-    console.log("❌ EMAIL ERROR FULL:", error);
+    console.log("❌ RESEND ERROR:", error);
 
     return res.status(500).json({
       success: false,
