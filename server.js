@@ -3,33 +3,16 @@ import cors from "cors";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
-// 1️⃣ Initialize environment variables
 dotenv.config();
 
-// 2️⃣ Create the Express application instance
 const app = express();
 
-// 3️⃣ Global Middleware
 app.use(cors());
 app.use(express.json());
 
-// 4️⃣ The Main Mail-Sending Route
-app.post("/send", async (req, res) => {
-  try {
-    console.log("🔥 SEND ROUTE HIT - Form data received from frontend");
-
-    const { name, email, subject, message } = req.body;
-
-    // Validate fields
-    if (!name || !email || !message) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing required fields (name, email, or message)."
-      });
-    }
-
-    // Set up Nodemailer to connect securely with Gmail
-       // Force IPv4 connection to bypass Railway's network routing glitch
+/* =========================
+   SMTP TRANSPORT (FIXED)
+========================= */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -41,50 +24,79 @@ const transporter = nodemailer.createTransport({
   rateLimit: 1,
 });
 
+/* Optional: check SMTP at startup */
+transporter.verify((error, success) => {
+  if (error) {
+    console.log("❌ SMTP ERROR:", error);
+  } else {
+    console.log("✅ SMTP READY");
+  }
+});
 
-    // Structure the notification email
+/* =========================
+   TEST ROUTE
+========================= */
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
+
+/* =========================
+   SEND EMAIL ROUTE
+========================= */
+app.post("/send", async (req, res) => {
+  try {
+    console.log("🔥 SEND ROUTE HIT - Data received");
+
+    const { name, email, subject, message } = req.body;
+
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields",
+      });
+    }
+
     const mailOptions = {
       from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER, 
+      to: process.env.EMAIL_USER,
       subject: subject || `New message from ${name}`,
-      replyTo: email, 
+      replyTo: email,
       text: `
-📬 New Portfolio Form Submission!
-===================================
+📬 New Portfolio Form Submission
+-----------------------------------
 Name: ${name}
 Email: ${email}
-Subject: ${subject || "No Subject Given"}
-
-Message Content:
------------------------------------
+Subject: ${subject || "No Subject"}
+Message:
 ${message}
-===================================
+-----------------------------------
       `,
     };
 
-    // Execute the mail transfer
-    await transporter.sendMail(mailOptions);
-    console.log("✅ Email sent successfully to inbox!");
+    const info = await transporter.sendMail(mailOptions);
 
-    res.json({ success: true, message: "Email sent!" });
+    console.log("✅ EMAIL SENT:", info.response);
+
+    return res.json({
+      success: true,
+      message: "Email sent successfully 🚀",
+    });
 
   } catch (error) {
-  console.error("🔥 FULL ERROR OBJECT:", error);
+    console.log("❌ EMAIL ERROR FULL:", error);
 
-  return res.status(500).json({
-    success: false,
-    message: error.message,
-    code: error.code,
-    command: error.command,
-    response: error.response,
-    stack: error.stack,
-  });
-}
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
-// 5️⃣ Production Server Setup
+/* =========================
+   START SERVER
+========================= */
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Production Mail Server running smoothly on port ${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
